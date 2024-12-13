@@ -1,0 +1,20 @@
+Support Vector Machines are supervised maximum margin models that are used for problems such as:
+\begin{itemize}
+    \item Classification
+    \item Regression
+    \item Distribution Estimation
+\end{itemize}
+They are considered supervised because they need a pre-labeled training set to develop 
+the hyperplanes that separate the classes. The terminology maximum margin refers to the
+fact that the SVM tries to solve a convex optimization problem which maximizes the 
+distance between the hyperplane and the closest data points from each class. This 
+distance is called "margin" and is mathematically defined as:
+\begin{equation}
+    \max_{w, b}{\|w\|^{-2}}
+\end{equation}
+\begin{equation}
+    w^Tx_i + b \geq 1 \quad \forall x_i \in C_1
+\end{equation}
+\begin{equation}
+    w^Tx_j + b \leq 1 \quad \forall x_j \in C_2
+\end{equation}

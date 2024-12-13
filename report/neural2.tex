@@ -1,0 +1,58 @@
+\documentclass[lettersize,journal]{IEEEtran}
+\usepackage{amsmath,amsfonts}
+\usepackage{algorithmic}
+\usepackage{algorithm}
+\usepackage{array}
+\usepackage[caption=false,font=normalsize,labelfont=sf,textfont=sf]{subfig}
+\usepackage{textcomp}
+\usepackage{stfloats}
+\usepackage{url}
+\usepackage{verbatim}
+\usepackage{graphicx}
+\usepackage{cite}
+\usepackage{longtable} % for tables
+\usepackage{booktabs} % for tables
+
+\hyphenation{op-tical net-works}
+\setlength{\parindent}{0pt}
+
+\begin{document}
+
+\title{Neural Networks-Deep Learning \\ 2nd Assignment}
+\author{Papadakis Konstantinos Fotios}
+% The paper headers
+\markboth{Neural Networks-Deep Learning, 2nd Assignment, 2024}
+\maketitle
+
+\begin{abstract}
+This is the second Assignment of the course "Neural Networks-Deep Learning". It revolves around
+creating a Support Vector Machine and and training it on the CIFAR-10 dataset to successfully 
+classify the images into one of the 10 classes. The algorithm used is analyzed extensively and
+results both in the testing and training phase are presented. SVM is challenged by other similar
+algorithms that are also trained on the CiFAR-10 dataset and try to solve the same classification 
+problem. These rival algorithms include 1 and 3 Nearest Neighbor, Nearest Centroid and MLP with
+one hidden layer using Hinge loss.
+\end{abstract}
+
+\section{Introduction}
+\input{sections/intro.tex} 
+
+\section{Support Vector Machine}
+\input{sections/svm.tex}
+
+\section{Multi-Layer Perceptron}
+\input{sections/mlp.tex}
+\subsection{}
+\subsection{Hinge Loss}
+
+\section{Nearest Neighbor and Nearest Centroid}
+\input{sections/nearest.tex}
+
+\section{Results}
+\subsection{Comparison of Algorithms}
+\input{sections/comp.tex}
+
+\vfill
+\end{document}
+
+
