@@ -1,0 +1,4 @@
+# Ignore dataset
+dataset/*
+# Ignore python virtual environment
+.venv/*
