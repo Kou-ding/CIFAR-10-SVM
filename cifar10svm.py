@@ -6,14 +6,9 @@ from torch.utils.data import DataLoader
 import matplotlib.pyplot as plt
 
 class CIFARSVM:
+    # Initialize the model
     def __init__(self, num_classes=10, input_size=3072):
-        """
-        Initialize Support Vector Machine for CIFAR-10 classification
-        
-        Args:
-            num_classes (int): Number of classes in CIFAR-10 (default 10)
-            input_size (int): Flattened image size (32x32x3 = 3072)
-        """
+        # Send model to device (GPU or CPU) for computation
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         
         # SVM-like model using linear layer
@@ -29,68 +24,58 @@ class CIFARSVM:
             momentum=0.9, 
             weight_decay=1e-5
         )
-
-    def _preprocess_data(self):
-        """
-        Prepare CIFAR-10 dataset with transformations
         
-        Returns:
-            train_loader, test_loader
-        """
-        transform = transforms.Compose([
+        # Tracking metrics
+        self.train_losses = []
+        self.train_accuracies = []
+        self.test_accuracies = []
+
+        # Preprocess datasets only once
+        self.transform = transforms.Compose([
             transforms.ToTensor(),
             transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
             transforms.Lambda(lambda x: x.view(-1))  # Flatten images
         ])
 
-        # Download and load training data
-        train_dataset = datasets.CIFAR10(
+        # Download datasets only once
+        self.train_dataset = datasets.CIFAR10(
             root='./dataset', 
             train=True, 
             download=True, 
-            transform=transform
+            transform=self.transform
         )
-        test_dataset = datasets.CIFAR10(
+        self.test_dataset = datasets.CIFAR10(
             root='./dataset', 
             train=False, 
             download=True, 
-            transform=transform
+            transform=self.transform
         )
 
+    def get_data_loaders(self, batch_size=64):
+        # Create data loaders
         train_loader = DataLoader(
-            train_dataset, 
-            batch_size=64, 
+            self.train_dataset, 
+            batch_size=batch_size, 
             shuffle=True, 
             num_workers=2
         )
         test_loader = DataLoader(
-            test_dataset, 
-            batch_size=64, 
+            self.test_dataset, 
+            batch_size=batch_size, 
             shuffle=False, 
             num_workers=2
         )
-
         return train_loader, test_loader
 
-    def train(self, epochs=50):
-        """
-        Train the SVM model on CIFAR-10
+    def train(self, epochs=10):
+        train_loader, test_loader = self.get_data_loaders()
         
-        Args:
-            epochs (int): Number of training epochs
-        
-        Returns:
-            train_accuracies, test_accuracies
-        """
-        train_loader, test_loader = self._preprocess_data()
-        
-        train_accuracies = []
-        test_accuracies = []
+        self.model.train()
         
         for epoch in range(epochs):
-            # Training phase
-            self.model.train()
             total_loss = 0.0
+            total = 0
+            correct = 0
             
             for batch_images, batch_labels in train_loader:
                 batch_images = batch_images.to(self.device)
@@ -110,36 +95,33 @@ class CIFARSVM:
                 self.optimizer.step()
                 
                 total_loss += loss.item()
-            
-            # Evaluate training accuracy
-            train_accuracy = self._calculate_accuracy(train_loader)
-            train_accuracies.append(train_accuracy)
-            
-            # Evaluate test accuracy
-            test_accuracy = self._calculate_accuracy(test_loader)
-            test_accuracies.append(test_accuracy)
-            
-            print(f"Epoch [{epoch+1}/{epochs}], Loss: {total_loss/len(train_loader):.4f}, "
-                  f"Train Accuracy: {train_accuracy:.2f}%, Test Accuracy: {test_accuracy:.2f}%")
-        
-        return train_accuracies, test_accuracies
 
-    def _calculate_accuracy(self, data_loader):
-        """
-        Calculate accuracy for a given data loader
-        
-        Args:
-            data_loader (DataLoader): Dataset to evaluate
-        
-        Returns:
-            Accuracy percentage
-        """
+                # Calculate training accuracy
+                _, predicted = torch.max(outputs.data, 1)
+                total += batch_labels.size(0)
+                correct += (predicted == batch_labels).sum().item()
+
+            # Store training metrics
+            train_loss = total_loss / len(train_loader)
+            train_accuracy = 100 * correct / total
+            self.train_losses.append(train_loss)
+            self.train_accuracies.append(train_accuracy)
+            
+            # Evaluate on test set for each epoch
+            test_accuracy = self.evaluate(test_loader)
+            self.test_accuracies.append(test_accuracy)
+            
+            print(f"Epoch [{epoch+1}/{epochs}], Loss: {train_loss:.4f}, "
+                  f"Train Accuracy: {train_accuracy:.2f}%, "
+                  f"Test Accuracy: {test_accuracy:.2f}%")
+
+    def evaluate(self, test_loader):
         self.model.eval()
         correct = 0
         total = 0
         
         with torch.no_grad():
-            for images, labels in data_loader:
+            for images, labels in test_loader:
                 images = images.to(self.device)
                 labels = labels.to(self.device)
                 
@@ -149,23 +131,43 @@ class CIFARSVM:
                 total += labels.size(0)
                 correct += (predicted == labels).sum().item()
         
-        return 100 * correct / total
+        accuracy = 100 * correct / total
+        print(f"Test Accuracy: {accuracy:.2f}%")
+        return accuracy
 
     def predict(self, image):
-        """
-        Predict class for a single image
-        
-        Args:
-            image (torch.Tensor): Preprocessed image tensor
-        
-        Returns:
-            Predicted class
-        """
         self.model.eval()
         with torch.no_grad():
             image = image.to(self.device)
             output = self.model(image)
             return torch.argmax(output).item()
+    
+    def plot_metrics(self):
+        """
+        Plot training and testing metrics
+        """
+        plt.figure(figsize=(12, 5))
+        
+        # Training Loss Plot
+        plt.subplot(1, 2, 1)
+        plt.plot(self.train_losses, label='Training Loss')
+        plt.title('Training Loss over Epochs')
+        plt.xlabel('Epochs')
+        plt.ylabel('Loss')
+        plt.legend()
+        
+        # Accuracy Plot
+        plt.subplot(1, 2, 2)
+        plt.plot(self.train_accuracies, label='Training Accuracy')
+        plt.plot(self.test_accuracies, label='Testing Accuracy')
+        plt.title('Training vs Testing Accuracy')
+        plt.xlabel('Epochs')
+        plt.ylabel('Accuracy (%)')
+        plt.legend()
+        
+        plt.tight_layout()
+        plt.show()
+
 
 # CIFAR-10 class names for reference
 classes = ('plane', 'car', 'bird', 'cat', 'deer', 
@@ -174,19 +176,10 @@ classes = ('plane', 'car', 'bird', 'cat', 'deer',
 def main():
     # Initialize and train SVM
     svm = CIFARSVM()
-    train_accuracies, test_accuracies = svm.train(epochs=30)
-    
-    # Plot accuracies
-    plt.figure(figsize=(10, 5))
-    plt.plot(range(1, len(train_accuracies) + 1), train_accuracies, label='Training Accuracy')
-    plt.plot(range(1, len(test_accuracies) + 1), test_accuracies, label='Testing Accuracy')
-    plt.title('Training and Testing Accuracy over Epochs')
-    plt.xlabel('Epochs')
-    plt.ylabel('Accuracy (%)')
-    plt.legend()
-    plt.grid(True)
-    plt.tight_layout()
-    plt.show()
+    svm.train(epochs=10)
+
+    # Plot training and testing metrics
+    svm.plot_metrics()
 
 if __name__ == "__main__":
     main()
