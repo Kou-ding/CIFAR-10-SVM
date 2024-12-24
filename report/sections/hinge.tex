@@ -1,0 +1,10 @@
+Hinge loss is a loss function commonly used in Support Vector Machines. Its goal is to 
+maximize the margin between classes by penalizing predictions that are on the opposite 
+side of their true class. The hinge loss function is defined as:
+\begin{equation}
+    L(y) = \max(0, 1 - y \cdot f(x)) 
+\end{equation}
+where $y$ is the actual value and $f(x)$ is the predicted value.
+
+It should be noted that even correct predictions are penalized if they are not confident 
+enough.
