@@ -121,7 +121,7 @@ class SVM(nn.Module):
         accuracy = 100. * correct / total
         return avg_loss, accuracy
 
-    def train_model(self, epochs, learning_rate):
+    def train_model(self, epochs, learning_rate, weight_decay):
         """Training process"""
 
         # Set random seed for reproducibility
@@ -139,13 +139,11 @@ class SVM(nn.Module):
         # Loss function
         loss_function = nn.MultiMarginLoss() # Hinge loss for multi-class classification
         
-        # Optimizer
-        optimizer = optim.Adam(self.parameters(), lr=learning_rate)
+        # Optimizer with L2 regularization (weight decay)
+        optimizer = optim.SGD(self.parameters(), lr=learning_rate, weight_decay=weight_decay, momentum=0.9)
         
-        # Learning rate scheduler
-        scheduler = optim.lr_scheduler.ReduceLROnPlateau(
-            optimizer, mode='min', patience=3, factor=0.5
-        )
+        # Scheduler for learning rate decay
+        scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=5, gamma=0.5)
 
         best_accuracy = 0
         start_time = time.time()
@@ -197,13 +195,13 @@ class SVM(nn.Module):
             print(f'Test Loss: {test_loss:.4f} | Test Accuracy: {test_accuracy:.2f}%')
             
             # Learning rate scheduling
-            scheduler.step(test_loss)
+            scheduler.step()
             
             # Save best model
             if test_accuracy > best_accuracy:
                 best_accuracy = test_accuracy
                 print(f'New best accuracy: {best_accuracy:.2f}%')
-                torch.save(self.state_dict(), 'best_svm_model.pth')
+                torch.save(self.state_dict(), 'best_svm_model+.pth')
 
         # Training summary
         training_time = time.time() - start_time
@@ -214,7 +212,7 @@ def main():
     # Initialize model
     model = SVM()
     # Train model
-    model.train_model(epochs=30, learning_rate=0.01)
+    model.train_model(epochs=30, learning_rate=0.01, weight_decay=0.0001)
     # Plot training history
     model.plot_metrics()
 
