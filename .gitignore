@@ -1,6 +1,6 @@
 # Ignore dataset
 dataset/*
 # Ignore python virtual environment
-.venv/*
+myvenv/*
 # Ignore models 
 *pth
